@@ -11,7 +11,7 @@ import SwiftUI
 struct Promo_IOSApp: App {
     var body: some Scene {
         WindowGroup {
-            RootView()
+            Login()
         }
     }
 }
