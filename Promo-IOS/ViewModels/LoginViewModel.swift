@@ -1,10 +1,3 @@
-//
-//  LoginViewModel.swift
-//  Promo-IOS
-//
-//  Created by Marcosuel Silva on 02/08/25.
-//
-
 import Foundation
 import SwiftUI
 
@@ -12,38 +5,60 @@ class LoginViewModel: ObservableObject {
     @Published var phone = ""
     @Published var password = ""
     @Published var errorMessage: String? = nil
-    @Published var isAuthenticated = false
-
-    private let service = AuthService()
-
+    @AppStorage("isAuthenticated") var isAuthenticated: Bool = false
+    @AppStorage("userName") var userName: String = ""
+    
+    private let baseURL = "http://144.22.225.3:5000/"
+    
     func login() {
+        // Validações
         guard !phone.isEmpty, !password.isEmpty else {
-            errorMessage = "Preencha todos os campos"
+            errorMessage = "Por favor, preencha todos os campos!"
             return
         }
-
-        guard phone.count >= 11 else {
-            errorMessage = "Número de telefone inválido"
+        guard phone.count >= 16 else {
+            errorMessage = "O número de telefone deve ter no mínimo 11 dígitos"
             return
         }
-
         guard password.count == 6 else {
-            errorMessage = "Senha deve ter 6 dígitos"
+            errorMessage = "Dados inválidos"
             return
         }
-
-        service.login(phone: phone, password: password) { result in
+        
+        guard let url = URL(string: "\(baseURL)login") else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        let body: [String: String] = ["phone": phone, "password": password]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: [])
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
             DispatchQueue.main.async {
-                switch result {
-                case .success(let response):
-                    UserDefaults.standard.set(true, forKey: "isAuthenticated")
-                    UserDefaults.standard.set(response.name, forKey: "userName")
+                if let error = error {
+                    self.errorMessage = "Erro: \(error.localizedDescription)"
+                    return
+                }
+                
+                guard let data = data,
+                      let httpResponse = response as? HTTPURLResponse,
+                      (200...299).contains(httpResponse.statusCode) else {
+                    self.errorMessage = "Dados inválidos"
+                    return
+                }
+                
+                do {
+                    let loginResponse = try JSONDecoder().decode(LoginResponse.self, from: data)
+                    self.userName = loginResponse.name
                     self.isAuthenticated = true
-                case .failure:
-                    self.errorMessage = "Erro ao autenticar"
+                } catch {
+                    self.errorMessage = "Erro ao processar resposta: \(error.localizedDescription)"
                 }
             }
-        }
+        }.resume()
+    }
+    
+    func logout() {
+        self.isAuthenticated = false
+        self.userName = ""
     }
 }
-

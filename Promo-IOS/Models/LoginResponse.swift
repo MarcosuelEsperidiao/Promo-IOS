@@ -8,5 +8,6 @@
 import Foundation
 
 struct LoginResponse: Codable {
+    let message: String
     let name: String
 }

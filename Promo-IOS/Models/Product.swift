@@ -8,18 +8,18 @@
 import Foundation
 import SwiftUI
 
-struct Product: Identifiable, Codable {
-    let id = UUID()
+struct Product: Codable {
     let location: String
     let locario: String
     let price: Double
+    let image: String?
+    let userName: String?
+    let profileImage: String?
     let description: String
     let timestamp: String
-    let image: String?
-    let userName: String
-    let profileImage: String?
     
     enum CodingKeys: String, CodingKey {
-        case location, locario, price, description, timestamp, image, userName, profileImage
+        case location, locario, price, image, userName, profileImage, description, timestamp
     }
 }
+
